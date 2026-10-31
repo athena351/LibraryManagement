@@ -1,72 +1,73 @@
 ﻿using Library.Data;
-using Library.Models.Entities;
-using Microsoft.EntityFrameworkCore;
+using Library.Models.DTOs.LibraryDTOs;
+using Library.Models.DTOs.BookDTOs;
+using Library.Models.DTOs.GenreDTOs;
+using Library.Repositories.Interfaces;
+using Library.Repositories.Implementations;
+using Library.Services.Interfaces;
+using Library.Services.Implementations;
 
 using var context = new LibraryDBContext();
 
-var library = new Library.Models.Entities.Library
+ILibraryRepository libraryRepository = new LibraryRepository(context);
+IBookRepository bookRepository = new BookRepository(context);
+IBookDetailsRepository bookDetailsRepository = new BookDetailsRepository(context);
+IGenreRepository genreRepository = new GenreRepository(context);
+
+ILibraryService libraryService = new LibraryService(libraryRepository);
+IBookService bookService = new BookService(bookRepository, libraryRepository, genreRepository);
+IBookDetailsService bookDetailsService = new BookDetailsService(bookDetailsRepository, bookRepository);
+IGenreService genreService = new GenreService(genreRepository);
+
+
+var library = await libraryService.AddAsync(new CreateLibraryDto
 {
     Name = "Central Library",
-    Address = "Tbilisi",
+    Address = "Tbilisi"
+});
 
-    Books = new List<Book>
-    {
-        new Book
-        {
-            Title = "The Hobbit",
-            Author = "J.R.R. Tolkien",
-            Price = 25.50m,
-            BookDetails = new BookDetails
-            {
-                ISBN = "9780007525492",
-                PageCount = 310,
-                PublishedYear = 1937
-            }
-        },
+Console.WriteLine($"Library added: {library.Name}");
 
-        new Book
-        {
-            Title = "1984",
-            Author = "George Orwell",
-            Price = 20m,
-            BookDetails = new BookDetails
-            {
-                ISBN = "9780451524935",
-                PageCount = 328,
-                PublishedYear = 1949
-            }
-        },
-
-        new Book
-        {
-            Title = "The Little Prince",
-            Author = "Antoine de Saint-Exupery",
-            Price = 15m,
-            BookDetails = new BookDetails
-            {
-                ISBN = "9780156012195",
-                PageCount = 96,
-                PublishedYear = 1943
-            }
-        }
-    }
-};
-
-context.Libraries.Add(library);
-await context.SaveChangesAsync();
-
-Console.WriteLine("Library and books added successfully!");
-
-var result = await context.Libraries
-    .Include(l => l.Books)
-    .FirstOrDefaultAsync(l => l.Id == library.Id);
-
-if (result != null)
+var fantasy = await genreService.AddAsync(new CreateGenreDto
 {
-    Console.WriteLine($"\nLibrary: {result.Name}");
+    Name = "Fantasy"
+});
 
-    foreach (var book in result.Books)
-    {
-        Console.WriteLine(book.Title);
-    }
+var adventure = await genreService.AddAsync(new CreateGenreDto
+{
+    Name = "Adventure"
+});
+
+var book = await bookService.AddAsync(new CreateBookDto
+{
+    Title = "The Hobbit",
+    Author = "J.R.R. Tolkien",
+    Price = 25,
+    LibraryId = library.Id,
+    GenreIds = new List<int> { fantasy.Id, adventure.Id }
+});
+
+Console.WriteLine($"Book added: {book.Title}");
+
+var details = await bookDetailsService.AddAsync(new Library.Models.DTOs.BookDetailsDTOs.CreateBookDetailsDto
+{
+    ISBN = "9780547928227",
+    PageCount = 310,
+    PublishedYear = 1937,
+    BookId = book.Id
+});
+
+Console.WriteLine($"Book details added. ISBN: {details.ISBN}");
+
+var books = await bookService.GetAllAsync();
+
+Console.WriteLine("\nAll books:");
+
+foreach (var item in books)
+{
+    Console.WriteLine($"Title: {item.Title}");
+    Console.WriteLine($"Author: {item.Author}");
+    Console.WriteLine($"Library: {item.LibraryName}");
+    Console.WriteLine($"Genres: {string.Join(", ", item.Genres)}");
+    Console.WriteLine();
 }

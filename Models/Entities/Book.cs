@@ -16,4 +16,5 @@ public class Book
     public int LibraryId { get; set; }
     public Library Library { get; set; }
     public BookDetails BookDetails { get; set; }
+    public ICollection<Genre> Genres { get; set; } = new List<Genre>();
 }

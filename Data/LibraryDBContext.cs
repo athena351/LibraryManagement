@@ -8,6 +8,7 @@ public class LibraryDBContext : DbContext
     public DbSet<Models.Entities.Library> Libraries { get; set; }
     public DbSet<Book> Books { get; set; }
     public DbSet<BookDetails> BookDetails { get; set; }
+    public DbSet<Genre> Genres { get; set; }
     
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
